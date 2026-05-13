@@ -12,6 +12,7 @@ cdk/*.js
 cdk/*.d.ts
 cdk/bin/*.js
 cdk/lib/*.js
+cdk.context.json
 
 # Python
 __pycache__/
