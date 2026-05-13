@@ -18,9 +18,14 @@ def validate_event(event: dict) -> RemediationContext:
     account_id = detail.get("accountId", "")
 
     if finding_type.startswith(COMPUTE_PREFIXES):
-        instance_id = detail["resource"]["instanceDetails"]["instanceId"]
-        eni_id = detail["resource"]["instanceDetails"]["networkInterfaces"][0]["networkInterfaceId"]
+        try:
+            instance_id = detail["resource"]["instanceDetails"]["instanceId"]
+            eni_id = detail["resource"]["instanceDetails"]["networkInterfaces"][0]["networkInterfaceId"]
+        except KeyError:
+            raise ValueError("Malformed event: missing required field")
         resource_arn = f"arn:aws:ec2:{region}:{account_id}:instance/{instance_id}"
+        if not RESOURCE_ARN_PATTERN.match(resource_arn):
+            raise ValueError(f"ARN failed validation: {resource_arn}")
         return RemediationContext(
             resource_arn=resource_arn,
             finding_id=finding_id,
@@ -32,7 +37,11 @@ def validate_event(event: dict) -> RemediationContext:
         )
 
     if finding_type.startswith(IDENTITY_PREFIXES):
-        principal_arn = detail["resource"]["accessKeyDetails"]["userArn"]
+        try:
+            principal_arn = detail["resource"]["accessKeyDetails"]["userArn"]
+            session_context = detail["resource"]["accessKeyDetails"].get("sessionContext", {})
+        except KeyError:
+            raise ValueError("Malformed event: missing required field")
         if not RESOURCE_ARN_PATTERN.match(principal_arn):
             raise ValueError(f"Rejected: ARN failed validation: {principal_arn}")
         return RemediationContext(
@@ -42,7 +51,7 @@ def validate_event(event: dict) -> RemediationContext:
             playbook_type="IDENTITY",
             action=event.get("action", "ValidateEvent"),
             principal_arn=principal_arn,
-            session_context=detail["resource"]["accessKeyDetails"].get("sessionContext", {}),
+            session_context=session_context,
         )
 
     raise ValueError(f"Unsupported finding type: {finding_type}")

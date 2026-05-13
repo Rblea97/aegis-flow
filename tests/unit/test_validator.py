@@ -20,6 +20,8 @@ def test_validate_console_login_returns_identity_context():
     ctx = validate_event(event)
     assert ctx.playbook_type == "IDENTITY"
     assert ctx.principal_arn.startswith("arn:aws:iam:")
+    assert ctx.principal_arn == "arn:aws:iam::123456789012:user/suspicious-user"
+    assert ctx.resource_arn == ctx.principal_arn
 
 def test_validate_rejects_invalid_arn():
     from aegis_remediator.validator import validate_event
