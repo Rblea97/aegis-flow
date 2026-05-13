@@ -106,15 +106,14 @@ export class AegisFlowFoundationStack extends cdk.Stack {
     }));
 
     this.remediationExecutionRole.addToPolicy(new iam.PolicyStatement({
+      sid: 'DynamoDBState',
+      actions: ['dynamodb:PutItem', 'dynamodb:UpdateItem', 'dynamodb:GetItem'],
+      resources: [this.activeJailsTable.tableArn],
+    }));
+
+    this.remediationExecutionRole.addToPolicy(new iam.PolicyStatement({
       sid: 'AuditAndEvidence',
-      actions: [
-        'dynamodb:PutItem',
-        'dynamodb:UpdateItem',
-        'dynamodb:GetItem',
-        'logs:CreateExportTask',
-        'cloudtrail:LookupEvents',
-        'sns:Publish',
-      ],
+      actions: ['logs:CreateExportTask', 'cloudtrail:LookupEvents', 'sns:Publish'],
       resources: ['*'],
     }));
 
