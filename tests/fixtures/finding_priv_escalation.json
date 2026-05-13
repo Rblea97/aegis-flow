@@ -1,0 +1,20 @@
+{
+  "source": "aws.guardduty",
+  "detail-type": "GuardDuty Finding",
+  "detail": {
+    "id": "ghi789",
+    "type": "PrivilegeEscalation:IAMUser/AdministrativePermissions",
+    "severity": 9.0,
+    "region": "us-east-1",
+    "accountId": "123456789012",
+    "resource": {
+      "resourceType": "AccessKey",
+      "accessKeyDetails": {
+        "userArn": "arn:aws:iam::123456789012:role/compromised-role",
+        "userName": "compromised-role",
+        "userType": "Role",
+        "sessionContext": { "sessionIssuer": { "type": "Role" } }
+      }
+    }
+  }
+}

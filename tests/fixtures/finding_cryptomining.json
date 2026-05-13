@@ -1,0 +1,20 @@
+{
+  "source": "aws.guardduty",
+  "detail-type": "GuardDuty Finding",
+  "detail": {
+    "id": "abc123",
+    "type": "Impact:EC2/CryptoMining",
+    "severity": 8.0,
+    "region": "us-east-1",
+    "accountId": "123456789012",
+    "resource": {
+      "resourceType": "Instance",
+      "instanceDetails": {
+        "instanceId": "i-0123456789abcdef0",
+        "networkInterfaces": [
+          { "networkInterfaceId": "eni-0123456789abcdef0" }
+        ]
+      }
+    }
+  }
+}

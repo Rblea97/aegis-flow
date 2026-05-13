@@ -1,0 +1,20 @@
+{
+  "source": "aws.guardduty",
+  "detail-type": "GuardDuty Finding",
+  "detail": {
+    "id": "def456",
+    "type": "UnauthorizedAccess:IAMUser/ConsoleLoginSuccess.B",
+    "severity": 7.0,
+    "region": "us-east-1",
+    "accountId": "123456789012",
+    "resource": {
+      "resourceType": "AccessKey",
+      "accessKeyDetails": {
+        "userArn": "arn:aws:iam::123456789012:user/suspicious-user",
+        "userName": "suspicious-user",
+        "userType": "IAMUser",
+        "sessionContext": {}
+      }
+    }
+  }
+}
