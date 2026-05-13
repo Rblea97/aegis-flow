@@ -85,6 +85,7 @@ export class AegisFlowFoundationStack extends cdk.Stack {
       sid: 'EC2Remediation',
       actions: [
         'ec2:ModifyNetworkInterfaceAttribute',
+        'ec2:ModifyInstanceAttribute',
         'ec2:DescribeInstances',
         'ec2:DescribeNetworkInterfaces',
         'ec2:CreateSnapshot',

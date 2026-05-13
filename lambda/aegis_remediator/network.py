@@ -25,6 +25,11 @@ def quarantine_network(ctx: RemediationContext) -> dict:
     if ctx.playbook_type == "IDENTITY":
         return {"action_taken": "skipped", "reason": "identity finding — no EC2 resource"}
 
+    if not ctx.eni_id:
+        raise ValueError("COMPUTE context missing eni_id — cannot quarantine network")
+    if not ctx.instance_id:
+        raise ValueError("COMPUTE context missing instance_id — cannot quarantine network")
+
     quarantine_sg_id = os.environ["QUARANTINE_SG_ID"]
     ec2 = boto3.client("ec2")
 

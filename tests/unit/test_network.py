@@ -41,7 +41,9 @@ def test_compute_quarantine_swaps_sg(ec2_with_instance):
     sg_ids = [sg["GroupId"] for sg in inst.security_groups]
     assert sg_ids == [os.environ["QUARANTINE_SG_ID"]]
     assert result["action_taken"] == "sg_swapped"
+    assert result["quarantine_sg_id"] == os.environ["QUARANTINE_SG_ID"]
 
+@mock_aws
 def test_identity_quarantine_is_noop():
     from aegis_remediator.network import quarantine_network
     ctx = RemediationContext(
