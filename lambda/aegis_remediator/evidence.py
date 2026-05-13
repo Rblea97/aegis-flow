@@ -73,7 +73,7 @@ def _collect_identity_evidence(ctx: RemediationContext) -> dict:
         s3.put_object(
             Bucket=FORENSICS_BUCKET,
             Key=key,
-            Body=json.dumps(events),
+            Body=json.dumps(events, default=str),
         )
         uri = f"s3://{FORENSICS_BUCKET}/{key}"
     except Exception as exc:
