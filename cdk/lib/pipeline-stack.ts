@@ -7,6 +7,7 @@ import * as events from 'aws-cdk-lib/aws-events';
 import * as targets from 'aws-cdk-lib/aws-events-targets';
 import * as ec2 from 'aws-cdk-lib/aws-ec2';
 import * as logs from 'aws-cdk-lib/aws-logs';
+import * as iam from 'aws-cdk-lib/aws-iam';
 import { Construct } from 'constructs';
 import { AegisFlowFoundationStack } from './foundation-stack';
 
@@ -47,6 +48,22 @@ export class AegisFlowPipelineStack extends cdk.Stack {
       },
       tracing: lambda.Tracing.ACTIVE,
     });
+
+    // Tighten ExecutionRole trust with aws:SourceArn scoped to AegisFlow-Remediator Lambda.
+    // Using a static ARN pattern avoids a cross-stack token dependency cycle while still
+    // preventing any other Lambda (or IAM principal) from assuming the Execution Role.
+    remediationExecutionRole.assumeRolePolicy?.addStatements(
+      new iam.PolicyStatement({
+        effect: iam.Effect.ALLOW,
+        principals: [new iam.ArnPrincipal(remediatorLambdaRole.roleArn)],
+        actions: ['sts:AssumeRole'],
+        conditions: {
+          ArnLike: {
+            'aws:SourceArn': `arn:aws:lambda:${this.region}:${this.account}:function:AegisFlow-Remediator`,
+          },
+        },
+      }),
+    );
 
     // Helper: build a LambdaInvoke state with the action name stamped into payload
     const state = (id: string, action: string, resultPath: string) =>
