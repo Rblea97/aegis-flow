@@ -65,5 +65,69 @@ export class AegisFlowFoundationStack extends cdk.Stack {
       removalPolicy: cdk.RemovalPolicy.DESTROY,
     });
     new cdk.CfnOutput(this, 'ActiveJailsTableName', { value: this.activeJailsTable.tableName });
+
+    // Remediator Lambda role: ONLY sts:AssumeRole — no direct AWS access
+    this.remediatorLambdaRole = new iam.Role(this, 'RemediatorLambdaRole', {
+      assumedBy: new iam.ServicePrincipal('lambda.amazonaws.com'),
+      managedPolicies: [
+        iam.ManagedPolicy.fromAwsManagedPolicyName('service-role/AWSLambdaVPCAccessExecutionRole'),
+      ],
+    });
+
+    // Remediation Execution Role: carries all real permissions
+    // Trust: locked to Remediator Lambda role + ExternalId (added in Pipeline stack after Lambda ARN is known)
+    this.remediationExecutionRole = new iam.Role(this, 'RemediationExecutionRole', {
+      roleName: 'AegisFlow-Remediation-Execution-Role',
+      assumedBy: this.remediatorLambdaRole, // tightened in pipeline-stack once Lambda ARN is known
+    });
+
+    this.remediationExecutionRole.addToPolicy(new iam.PolicyStatement({
+      sid: 'EC2Remediation',
+      actions: [
+        'ec2:ModifyNetworkInterfaceAttribute',
+        'ec2:DescribeInstances',
+        'ec2:DescribeNetworkInterfaces',
+        'ec2:CreateSnapshot',
+        'ec2:DescribeSnapshots',
+      ],
+      resources: ['*'], // scoped by condition at assume-role time
+    }));
+
+    this.remediationExecutionRole.addToPolicy(new iam.PolicyStatement({
+      sid: 'IAMRemediation',
+      actions: [
+        'iam:PutRolePolicy',
+        'iam:PutUserPolicy',
+        'iam:GetRole',
+        'iam:GetUser',
+        'iam:UpdateAssumeRolePolicy',
+      ],
+      resources: ['*'],
+    }));
+
+    this.remediationExecutionRole.addToPolicy(new iam.PolicyStatement({
+      sid: 'AuditAndEvidence',
+      actions: [
+        'dynamodb:PutItem',
+        'dynamodb:UpdateItem',
+        'dynamodb:GetItem',
+        'logs:CreateExportTask',
+        'cloudtrail:LookupEvents',
+        'sns:Publish',
+      ],
+      resources: ['*'],
+    }));
+
+    this.forensicsBucket.grantWrite(this.remediationExecutionRole);
+
+    // Grant Remediator Lambda role permission to assume the Execution Role
+    this.remediatorLambdaRole.addToPolicy(new iam.PolicyStatement({
+      actions: ['sts:AssumeRole'],
+      resources: [this.remediationExecutionRole.roleArn],
+    }));
+
+    new cdk.CfnOutput(this, 'RemediationExecutionRoleArn', {
+      value: this.remediationExecutionRole.roleArn,
+    });
   }
 }
