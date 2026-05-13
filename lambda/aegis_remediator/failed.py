@@ -8,9 +8,10 @@ log = logging.getLogger(__name__)
 SNS_TOPIC_ARN = os.environ.get("SNS_ALERT_TOPIC_ARN", "")
 
 def handle_remediation_failed(ctx: RemediationContext, event: dict) -> dict:
-    failed_state = event.get("error", {}).get("Error", "UnknownError")
-    failure_reason = event.get("error", {}).get("Cause", "Unknown")
-    partial = _extract_partial_actions(event)
+    state = event.get("context", event)  # Step Functions execution state lives here
+    failed_state = state.get("error", {}).get("Error", "UnknownError")
+    failure_reason = state.get("error", {}).get("Cause", "Unknown")
+    partial = _extract_partial_actions(state)
 
     write_failed_record(ctx, failed_state=failed_state,
                         failure_reason=failure_reason, partial=partial)
@@ -29,9 +30,9 @@ def handle_remediation_failed(ctx: RemediationContext, event: dict) -> dict:
     create_failed_github_pr(ctx, failed_state=failed_state, partial=partial)
     return {"remediation_failed": True, "failed_state": failed_state}
 
-def _extract_partial_actions(event: dict) -> list:
+def _extract_partial_actions(state: dict) -> list:
     completed = []
     for key in ("networkResult", "evidenceResult", "lockResult"):
-        if key in event:
+        if key in state:
             completed.append(key.replace("Result", ""))
     return completed
