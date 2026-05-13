@@ -1,0 +1,28 @@
+# AI tooling — never committed
+.claude/
+.superpowers/
+CLAUDE.md
+AGENTS.md
+GEMINI.md
+
+# CDK
+cdk/node_modules/
+cdk/cdk.out/
+cdk/*.js
+cdk/*.d.ts
+cdk/bin/*.js
+cdk/lib/*.js
+
+# Python
+__pycache__/
+*.pyc
+.pytest_cache/
+.venv/
+*.egg-info/
+
+# LocalStack
+.localstack/
+
+# Secrets
+.env
+*.pem
