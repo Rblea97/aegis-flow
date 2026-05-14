@@ -27,9 +27,9 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: "24"
+          node-version: "20"
       - name: Install CDK dependencies
-        run: npm ci
+        run: npm install
         working-directory: cdk
       - name: Run CDK tests
         run: npm test -- --runInBand
