@@ -1,6 +1,6 @@
 # Aegis-Flow
 
-[![CI](https://github.com/YOUR-USERNAME/aegis-flow/actions/workflows/ci.yml/badge.svg)](https://github.com/YOUR-USERNAME/aegis-flow/actions/workflows/ci.yml)
+[![CI](https://github.com/rblea97/aegis-flow/actions/workflows/ci.yml/badge.svg)](https://github.com/rblea97/aegis-flow/actions/workflows/ci.yml)
 
 Aegis-Flow is a local-first AWS security automation lab that detects GuardDuty-style findings, collects evidence, quarantines compromised resources, freezes identity access, and writes an auditable remediation record.
 

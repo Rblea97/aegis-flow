@@ -32,3 +32,6 @@ __pycache__/
 cdk-outputs.json
 test-finding.json
 aws-proof.txt
+
+# Superpowers planning artifacts
+docs/superpowers/
