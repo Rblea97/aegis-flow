@@ -4,11 +4,12 @@ services:
     ports:
       - "4566:4566"
     environment:
-      SERVICES: ec2,iam,dynamodb,s3,lambda,stepfunctions,events,sns,sts,cloudtrail,logs
+      SERVICES: cloudformation,cloudwatch,ec2,iam,dynamodb,s3,lambda,stepfunctions,events,sns,sts,cloudtrail,logs,ssm,ecr,kms
       DEBUG: 1
       AWS_DEFAULT_REGION: us-east-1
     volumes:
       - ./scripts/localstack-init:/etc/localstack/init/ready.d
+      - //var/run/docker.sock:/var/run/docker.sock
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:4566/_localstack/health"]
       interval: 5s

@@ -1,7 +1,9 @@
 import json
 import time
+from uuid import uuid4
 import pytest
 from pathlib import Path
+from botocore.exceptions import ClientError
 
 FIXTURES = Path(__file__).parent.parent / "fixtures"
 
@@ -14,40 +16,46 @@ def get_sfn_arn(sfn_client):
     return sfn_client.list_state_machines()["stateMachines"][0]["stateMachineArn"]
 
 
-def wait_for_execution(sfn, arn, timeout=10):
+def wait_for_complete_item(table, resource_arn: str, timeout=10):
     start = time.time()
     while time.time() - start < timeout:
-        resp = sfn.describe_execution(executionArn=arn)
-        if resp["status"] in ("SUCCEEDED", "FAILED", "TIMED_OUT", "ABORTED"):
-            return resp
+        response = table.get_item(Key={"resource_arn": resource_arn})
+        item = response.get("Item")
+        if item and item.get("status") == "COMPLETE":
+            return item
         time.sleep(0.5)
-    pytest.fail("Execution timed out")
+    pytest.fail(f"Audit record for {resource_arn} did not reach COMPLETE within {timeout}s")
 
 
 def test_identity_playbook_freezes_principal(iam_client, dynamodb_resource, sfn_client):
-    iam_client.create_role(
-        RoleName="compromised-role",
-        AssumeRolePolicyDocument=json.dumps({
-            "Version": "2012-10-17",
-            "Statement": [{"Effect": "Allow", "Principal": {"Service": "ec2.amazonaws.com"},
-                           "Action": "sts:AssumeRole"}]
-        }),
-    )
+    role_name = f"compromised-role-{uuid4().hex[:8]}"
+    role_arn = f"arn:aws:iam::123456789012:role/{role_name}"
+    try:
+        iam_client.create_role(
+            RoleName=role_name,
+            AssumeRolePolicyDocument=json.dumps({
+                "Version": "2012-10-17",
+                "Statement": [{"Effect": "Allow", "Principal": {"Service": "ec2.amazonaws.com"},
+                               "Action": "sts:AssumeRole"}]
+            }),
+        )
+    except ClientError as exc:
+        if exc.response["Error"]["Code"] != "EntityAlreadyExists":
+            raise
 
     finding = load_fixture("finding_priv_escalation.json")
-    exec_resp = sfn_client.start_execution(
+    finding["detail"]["id"] = f"{role_name}-finding"
+    finding["detail"]["resource"]["accessKeyDetails"]["userArn"] = role_arn
+    finding["detail"]["resource"]["accessKeyDetails"]["userName"] = role_name
+    sfn_client.start_execution(
         stateMachineArn=get_sfn_arn(sfn_client), input=json.dumps(finding)
     )
-    result = wait_for_execution(sfn_client, exec_resp["executionArn"])
-    assert result["status"] == "SUCCEEDED"
 
-    policies = iam_client.list_role_policies(RoleName="compromised-role")["PolicyNames"]
+    table = dynamodb_resource.Table("AegisFlow_ActiveJails")
+    item = wait_for_complete_item(table, role_arn)
+
+    policies = iam_client.list_role_policies(RoleName=role_name)["PolicyNames"]
     assert "AegisFlow-Deny-All" in policies
 
-    resource_arn = finding["detail"]["resource"]["accessKeyDetails"]["userArn"]
-    table = dynamodb_resource.Table("AegisFlow_ActiveJails")
-    response = table.get_item(Key={"resource_arn": resource_arn})
-    assert "Item" in response, f"No DynamoDB record for {resource_arn!r} — execution status: {result['status']}"
-    item = response["Item"]
     assert item["status"] == "COMPLETE"
     assert item["playbook_type"] == "IDENTITY"

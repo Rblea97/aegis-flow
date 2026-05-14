@@ -27,3 +27,8 @@ __pycache__/
 # Secrets
 .env
 *.pem
+
+# Generated deploy artifacts (contain account IDs)
+cdk-outputs.json
+test-finding.json
+aws-proof.txt

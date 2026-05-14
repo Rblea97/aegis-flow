@@ -1,0 +1,76 @@
+# Aegis-Flow Architecture
+
+## Overview
+
+Aegis-Flow is a Zero Trust remediation workflow for GuardDuty-style findings. A high-severity finding is routed into an Express Step Functions workflow, where a Python Lambda validates the event, acquires a DynamoDB lock, collects evidence, applies quarantine controls, writes an audit record, and prepares a GitHub-style remediation trail.
+
+## Component Model
+
+```text
+GuardDuty Finding
+  -> EventBridge Rule
+  -> Step Functions Express Workflow
+  -> Aegis Remediator Lambda
+  -> EC2 / IAM / DynamoDB / S3 / SNS
+```
+
+The project uses two CDK stacks:
+
+- `AegisFlowFoundationStack`: VPC, quarantine security group, forensics bucket, active jail table, Lambda execution role, remediation execution role.
+- `AegisFlowPipelineStack`: SNS topic, Lambda function, Step Functions workflow, EventBridge rule, workflow logs.
+
+## Remediation Flow
+
+The Step Functions workflow runs these states:
+
+1. `ValidateEvent`
+2. `AcquireLock`
+3. `CollectEvidence`
+4. `QuarantineNetwork`
+5. `FreezeIdentity`
+6. `WriteAuditRecord`
+7. `CreateGitHubPR`
+
+The workflow remains `EXPRESS` to match the design spec. Integration tests verify the workflow through durable state changes rather than polling Express execution details.
+
+## Playbooks
+
+`COMPUTE` findings target EC2 resources:
+
+- Trigger: `Impact:EC2/CryptoMining`
+- Enforcement: replace target network interface and instance security groups with the quarantine security group.
+- Identity control: attach `AegisFlow-Deny-All` to the instance role.
+
+`IDENTITY` findings target IAM principals:
+
+- Triggers: `UnauthorizedAccess:IAMUser/ConsoleLoginSuccess.B`, `PrivilegeEscalation:IAMUser/AdministrativePermissions`
+- Enforcement: attach `AegisFlow-Deny-All` to the user or role.
+- Network quarantine is recorded as skipped because there is no EC2 target.
+
+## State and Idempotency
+
+DynamoDB table `AegisFlow_ActiveJails` is the active remediation ledger. The partition key is `resource_arn`. `AcquireLock` uses a conditional write so duplicate findings for the same resource do not create duplicate jail records.
+
+## LocalStack Compatibility
+
+The default CDK synthesis path is the production/spec path:
+
+- Step Functions: Express
+- Private subnets: private with egress
+- NAT gateways: one
+
+LocalStack has partial support for some EC2 networking features, so local deployment uses:
+
+```powershell
+$env:AEGISFLOW_LOCALSTACK='1'
+```
+
+This disables NAT gateway creation and uses isolated private subnets only for the emulator. It does not change the workflow type or remediation behavior.
+
+## Verification
+
+Verification is state-based:
+
+- Unit tests use moto for in-process AWS mocks.
+- Integration tests deploy CDK to LocalStack and assert DynamoDB, IAM, and EC2 post-state.
+- `scripts/verify_remediation.py` independently audits the remediated resource using Boto3.
