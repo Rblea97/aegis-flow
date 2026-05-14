@@ -46,7 +46,7 @@ test('foundation stack preserves production network and jail store requirements'
     },
   });
   const securityGroups = foundationTemplate.findResources('AWS::EC2::SecurityGroup', {
-    Properties: { GroupDescription: 'AegisFlow quarantine — deny all traffic' },
+    Properties: { GroupDescription: 'AegisFlow quarantine - deny all traffic' },
   });
   const quarantineSecurityGroup = Object.values(securityGroups)[0] as {
     Properties: { SecurityGroupEgress?: Array<Record<string, string>> };
