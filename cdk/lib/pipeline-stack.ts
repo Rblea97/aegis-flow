@@ -20,7 +20,7 @@ export class AegisFlowPipelineStack extends cdk.Stack {
     super(scope, id, props);
 
     const { vpc, quarantineSg, forensicsBucket, activeJailsTable,
-            remediatorLambdaRole, remediationExecutionRole } = props.foundationStack;
+            remediatorLambdaRole, remediationExecutionRole, lambdaSubnetType } = props.foundationStack;
 
     // SNS topic for security ops alerts
     const securityOpsTopic = new sns.Topic(this, 'SecurityOpsTopic', {
@@ -32,10 +32,12 @@ export class AegisFlowPipelineStack extends cdk.Stack {
       functionName: 'AegisFlow-Remediator',
       runtime: lambda.Runtime.PYTHON_3_12,
       handler: 'aegis_remediator.handler.handler',
-      code: lambda.Code.fromAsset('../lambda'),
+      code: lambda.Code.fromAsset('../lambda', {
+        exclude: ['.venv/**', '**/__pycache__/**', '**/*.pyc', '*.egg-info/**'],
+      }),
       role: remediatorLambdaRole,
       vpc,
-      vpcSubnets: { subnetType: ec2.SubnetType.PRIVATE_WITH_EGRESS },
+      vpcSubnets: { subnetType: lambdaSubnetType },
       timeout: cdk.Duration.minutes(5),
       memorySize: 256,
       environment: {
