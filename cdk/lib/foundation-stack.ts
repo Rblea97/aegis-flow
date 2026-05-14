@@ -12,24 +12,30 @@ export class AegisFlowFoundationStack extends cdk.Stack {
   public readonly activeJailsTable: dynamodb.Table;
   public readonly remediatorLambdaRole: iam.Role;
   public readonly remediationExecutionRole: iam.Role;
+  public readonly lambdaSubnetType: ec2.SubnetType;
 
   constructor(scope: Construct, id: string, props?: cdk.StackProps) {
     super(scope, id, props);
+
+    const isLocalStack = process.env.AEGISFLOW_LOCALSTACK === '1';
+    this.lambdaSubnetType = isLocalStack
+      ? ec2.SubnetType.PRIVATE_ISOLATED
+      : ec2.SubnetType.PRIVATE_WITH_EGRESS;
 
     // VPC: Lambda lives in private subnets; flow logs to S3
     this.vpc = new ec2.Vpc(this, 'AegisVpc', {
       ipAddresses: ec2.IpAddresses.cidr('10.0.0.0/16'),
       maxAzs: 2,
-      natGateways: 1,
+      natGateways: isLocalStack ? 0 : 1,
+      restrictDefaultSecurityGroup: false,
       subnetConfiguration: [
         { name: 'Public', subnetType: ec2.SubnetType.PUBLIC, cidrMask: 24 },
-        { name: 'Private', subnetType: ec2.SubnetType.PRIVATE_WITH_EGRESS, cidrMask: 24 },
+        { name: 'Private', subnetType: this.lambdaSubnetType, cidrMask: 24 },
       ],
     });
 
     const flowLogsBucket = new s3.Bucket(this, 'FlowLogsBucket', {
       removalPolicy: cdk.RemovalPolicy.DESTROY,
-      autoDeleteObjects: true,
     });
     this.vpc.addFlowLog('VpcFlowLog', {
       destination: ec2.FlowLogDestination.toS3(flowLogsBucket),
@@ -39,7 +45,7 @@ export class AegisFlowFoundationStack extends cdk.Stack {
     // QuarantineSG: zero ingress + zero egress = deny all
     this.quarantineSg = new ec2.SecurityGroup(this, 'QuarantineSG', {
       vpc: this.vpc,
-      description: 'AegisFlow quarantine — deny all traffic',
+      description: 'AegisFlow quarantine - deny all traffic',
       allowAllOutbound: false, // disables default allow-all egress
     });
     new cdk.CfnOutput(this, 'QuarantineSgId', { value: this.quarantineSg.securityGroupId });
