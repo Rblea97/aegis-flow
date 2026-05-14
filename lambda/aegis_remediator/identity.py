@@ -2,9 +2,8 @@ import json
 import logging
 from datetime import datetime, timezone
 
-import boto3
-
 from .models import RemediationContext
+from .session import get_client
 
 log = logging.getLogger(__name__)
 
@@ -24,7 +23,7 @@ DENY_ALL_POLICY = json.dumps({
 
 
 def freeze_identity(ctx: RemediationContext, role_name_override: str = "") -> dict:
-    iam = boto3.client("iam")
+    iam = get_client("iam")
 
     if ctx.playbook_type == "COMPUTE":
         role_name = role_name_override or _get_instance_role(ctx.instance_id)
@@ -55,12 +54,12 @@ def freeze_identity(ctx: RemediationContext, role_name_override: str = "") -> di
 
 
 def _get_instance_role(instance_id: str) -> str:
-    ec2 = boto3.client("ec2")
+    ec2 = get_client("ec2")
     resp = ec2.describe_instances(InstanceIds=[instance_id])
     instance = resp["Reservations"][0]["Instances"][0]
     profile = instance.get("IamInstanceProfile")
     if not profile:
         raise ValueError(f"Instance {instance_id} has no IAM instance profile attached")
     profile_name = profile["Arn"].split("/")[-1]
-    iam = boto3.client("iam")
+    iam = get_client("iam")
     return iam.get_instance_profile(InstanceProfileName=profile_name)["InstanceProfile"]["Roles"][0]["RoleName"]

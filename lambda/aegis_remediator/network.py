@@ -1,7 +1,7 @@
 import os
-import boto3
 
 from .models import RemediationContext
+from .session import get_client
 
 
 def quarantine_network(ctx: RemediationContext) -> dict:
@@ -31,7 +31,7 @@ def quarantine_network(ctx: RemediationContext) -> dict:
         raise ValueError("COMPUTE context missing instance_id — cannot quarantine network")
 
     quarantine_sg_id = os.environ["QUARANTINE_SG_ID"]
-    ec2 = boto3.client("ec2")
+    ec2 = get_client("ec2")
 
     # Step 1: Replace SGs on the specific ENI (ENI-level precision).
     ec2.modify_network_interface_attribute(

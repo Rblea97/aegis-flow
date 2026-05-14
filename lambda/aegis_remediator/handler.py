@@ -81,6 +81,10 @@ def _context_from_state(event: dict, action: str) -> RemediationContext:
     ctx_data = event.get("context", {})
     if isinstance(ctx_data, dict) and "Payload" in ctx_data:
         ctx_data = ctx_data["Payload"]
+    elif isinstance(ctx_data, dict) and "context" in ctx_data:
+        nested_context = ctx_data.get("context", {})
+        if isinstance(nested_context, dict) and "Payload" in nested_context:
+            ctx_data = nested_context["Payload"]
     return RemediationContext(
         resource_arn=ctx_data.get("resource_arn", ""),
         finding_id=ctx_data.get("finding_id", ""),

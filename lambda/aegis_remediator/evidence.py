@@ -2,9 +2,9 @@ import json
 import os
 import logging
 import datetime
-import boto3
 
 from .models import RemediationContext
+from .session import get_client
 
 log = logging.getLogger(__name__)
 FORENSICS_BUCKET = os.environ["FORENSICS_BUCKET"]
@@ -27,8 +27,8 @@ def collect_evidence(ctx: RemediationContext) -> dict:
 
 
 def _collect_compute_evidence(ctx: RemediationContext) -> dict:
-    s3 = boto3.client("s3")
-    ec2 = boto3.client("ec2")
+    s3 = get_client("s3")
+    ec2 = get_client("ec2")
     uris: list[str] = []
     try:
         resp = ec2.describe_instances(InstanceIds=[ctx.instance_id])
@@ -58,8 +58,8 @@ def _collect_compute_evidence(ctx: RemediationContext) -> dict:
 
 
 def _collect_identity_evidence(ctx: RemediationContext) -> dict:
-    s3 = boto3.client("s3")
-    cloudtrail = boto3.client("cloudtrail")
+    s3 = get_client("s3")
+    cloudtrail = get_client("cloudtrail")
     end = datetime.datetime.now(datetime.timezone.utc)
     start = end - datetime.timedelta(hours=2)
     try:

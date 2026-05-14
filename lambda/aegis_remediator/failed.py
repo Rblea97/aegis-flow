@@ -1,8 +1,8 @@
 import logging, os
-import boto3
 from .models import RemediationContext
 from .audit import write_failed_record
 from .github_pr import create_failed_github_pr
+from .session import get_client
 
 log = logging.getLogger(__name__)
 SNS_TOPIC_ARN = os.environ.get("SNS_ALERT_TOPIC_ARN", "")
@@ -18,7 +18,7 @@ def handle_remediation_failed(ctx: RemediationContext, event: dict) -> dict:
 
     if SNS_TOPIC_ARN:
         try:
-            boto3.client("sns").publish(
+            get_client("sns").publish(
                 TopicArn=SNS_TOPIC_ARN,
                 Subject=f"[AEGISFLOW ALERT] Incomplete quarantine: {ctx.resource_arn}",
                 Message=f"State {failed_state} failed.\nReason: {failure_reason}\n"

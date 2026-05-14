@@ -1,7 +1,8 @@
-import os, time, boto3
+import os, time
 from boto3.dynamodb.conditions import Attr
 from botocore.exceptions import ClientError
 from .models import RemediationContext
+from .session import get_resource
 
 TABLE_NAME = os.environ["ACTIVE_JAILS_TABLE"]
 TTL_SECONDS = 86_400  # 24h
@@ -12,7 +13,7 @@ class AlreadyLocked(Exception):
 
 
 def acquire_lock(ctx: RemediationContext) -> None:
-    table = boto3.resource("dynamodb").Table(TABLE_NAME)
+    table = get_resource("dynamodb").Table(TABLE_NAME)
     try:
         table.put_item(
             Item={

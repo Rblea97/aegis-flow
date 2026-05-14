@@ -1,14 +1,14 @@
 import os, logging
 from datetime import datetime, timezone
-import boto3
 from .models import RemediationContext
+from .session import get_resource
 
 log = logging.getLogger(__name__)
 TABLE_NAME = os.environ["ACTIVE_JAILS_TABLE"]
 
 def write_audit_record(ctx: RemediationContext, action_log: dict,
                         evidence_status: str, evidence_uris: list) -> None:
-    table = boto3.resource("dynamodb").Table(TABLE_NAME)
+    table = get_resource("dynamodb").Table(TABLE_NAME)
     table.update_item(
         Key={"resource_arn": ctx.resource_arn},
         UpdateExpression=(
@@ -28,7 +28,7 @@ def write_audit_record(ctx: RemediationContext, action_log: dict,
 
 def write_failed_record(ctx: RemediationContext, failed_state: str,
                          failure_reason: str, partial: list) -> None:
-    table = boto3.resource("dynamodb").Table(TABLE_NAME)
+    table = get_resource("dynamodb").Table(TABLE_NAME)
     table.update_item(
         Key={"resource_arn": ctx.resource_arn},
         UpdateExpression=(
@@ -46,7 +46,7 @@ def write_failed_record(ctx: RemediationContext, failed_state: str,
     )
 
 def mark_pr_pending(ctx: RemediationContext) -> None:
-    table = boto3.resource("dynamodb").Table(TABLE_NAME)
+    table = get_resource("dynamodb").Table(TABLE_NAME)
     table.update_item(
         Key={"resource_arn": ctx.resource_arn},
         UpdateExpression="SET github_pr_pending = :t",
