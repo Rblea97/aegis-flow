@@ -129,6 +129,50 @@ tests/unit/test_validator.py::test_validate_rejects_unknown_finding_type PASSED 
 
 Integration tests require LocalStack + `cdklocal deploy` — see Quick Start above.
 
+### Live AWS execution (account 560904638100, us-west-1)
+
+Step Functions Express state machine executed end-to-end against a real AWS account. IAM role `aegisflow-demo-victim` was targeted with a `PrivilegeEscalation:IAMUser/AdministrativePermissions` finding. All 7 states completed in 4.1 seconds:
+
+~~~text
+{
+    "status": "SUCCEEDED",
+    "billingDetails": {
+        "billedMemoryUsedInMB": 64,
+        "billedDurationInMilliseconds": 4100
+    },
+    "output": {
+        "identityResult": {
+            "Payload": {
+                "action_taken": "deny_policy_attached_with_sts_revocation",
+                "target": "arn:aws:iam::560904638100:role/aegisflow-demo-victim",
+                "sts_sessions_revoked": true
+            }
+        },
+        "evidenceResult": {
+            "Payload": {
+                "evidence_collection_status": "success",
+                "evidence_s3_uris": [
+                    "s3://aegisflowfoundationstack-forensicsbucket.../evidence/ghi789/cloudtrail-export.json"
+                ]
+            }
+        }
+    }
+}
+~~~
+
+Post-execution audit confirmed:
+
+~~~text
+============================================================
+AegisFlow Remediation Audit - arn:aws:iam::560904638100:role/aegisflow-demo-victim
+============================================================
+PASS DynamoDB status: COMPLETE
+PASS IAM Deny-All policy: present
+PASS Evidence collection: success
+
+AUDIT PASSED
+~~~
+
 ## Challenges and Solutions
 
 - **LocalStack partial Express Step Functions support** — LocalStack 3 does not execute Express state machines end-to-end identically to real AWS. Integration tests verify correctness through durable post-state assertions (DynamoDB status, IAM policy presence, EC2 security group membership) rather than polling `DescribeExecution`. This matches the real definition of done: the audit trail in DynamoDB is the ground truth, not the execution response.
