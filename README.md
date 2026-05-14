@@ -19,7 +19,21 @@ When a GuardDuty finding fires, you have minutes before an attacker establishes 
 
 ## Live Execution
 
-IAM role `aegisflow-demo-victim` targeted with a `PrivilegeEscalation:IAMUser/AdministrativePermissions` finding. All 7 states completed on real AWS (account 560904638100, us-west-1):
+IAM role `aegisflow-demo-victim` targeted with a `PrivilegeEscalation:IAMUser/AdministrativePermissions` finding. All 7 states completed on real AWS (account 560904638100, us-west-1). Execution trace from CloudWatch Logs:
+
+~~~text
+ State                Duration   Timeline
+ ─────────────────────────────────────────────────────────────
+ ValidateEvent          575ms   ████
+ AcquireLock           1985ms   ████████████████████████████
+ CollectEvidence        792ms   ████████████
+ QuarantineNetwork       16ms   ░
+ FreezeIdentity         522ms   ████████
+ WriteAuditRecord       170ms   ███
+ CreateGitHubPR          15ms   ░
+ ─────────────────────────────────────────────────────────────
+ Total                 4075ms   SUCCEEDED
+~~~
 
 ~~~text
 {
