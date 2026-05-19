@@ -29,3 +29,9 @@ AI-generated code is not trusted by default. V1 changes are expected to pass:
 - `pip-audit`, npm high-severity audit gates, Dependabot, and Dependency Review for dependency risk.
 - CodeQL for GitHub-hosted semantic security analysis.
 - Unit tests before merge, with LocalStack integration checks for release validation.
+
+## Tracked Dependency Exceptions
+
+| Dependency | Severity | Source | Current action |
+| --- | --- | --- | --- |
+| `brace-expansion` bundled under `aws-cdk-lib` | Moderate | GHSA-jxxr-4gwj-5jf2 | Accepted temporarily because `npm audit fix` cannot patch bundled dependencies inside `aws-cdk-lib@2.255.0`. Keep `npm audit --audit-level=high` as the blocking CI gate, monitor Dependabot for an upstream CDK release, and revisit before the next tagged release. |
