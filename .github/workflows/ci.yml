@@ -2,13 +2,16 @@ name: CI
 
 on:
   push:
-    branches: [master]
   pull_request:
     branches: [master]
+  workflow_dispatch:
+
+permissions:
+  contents: read
 
 jobs:
   unit-tests:
-    name: Python unit tests
+    name: Python static analysis, audit, and unit tests
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -17,11 +20,15 @@ jobs:
           python-version: "3.12"
       - name: Install dependencies
         run: pip install -r lambda/requirements.txt -r lambda/requirements-dev.txt
+      - name: Run Ruff static analysis
+        run: ruff check lambda scripts tests
+      - name: Audit Python dependencies
+        run: pip-audit -r lambda/requirements.txt -r lambda/requirements-dev.txt
       - name: Run unit tests
         run: pytest tests/unit -v
 
   cdk-build:
-    name: CDK TypeScript build & test
+    name: CDK TypeScript build, audit, and tests
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -30,6 +37,12 @@ jobs:
           node-version: "20"
       - name: Install CDK dependencies
         run: npm install
+        working-directory: cdk
+      - name: Audit CDK dependencies
+        run: npm audit --audit-level=high
+        working-directory: cdk
+      - name: Build CDK app
+        run: npm run build
         working-directory: cdk
       - name: Run CDK tests
         run: npm test -- --runInBand

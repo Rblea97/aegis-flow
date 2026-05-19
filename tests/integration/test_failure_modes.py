@@ -1,8 +1,9 @@
 import json
 import time
-from uuid import uuid4
-import pytest
 from pathlib import Path
+from uuid import uuid4
+
+import pytest
 from boto3.dynamodb.conditions import Attr
 from botocore.exceptions import ClientError
 

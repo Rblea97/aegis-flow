@@ -1,7 +1,9 @@
-import os, time, pytest
+import os
+
 import boto3
-from moto import mock_aws
+import pytest
 from aegis_remediator.models import RemediationContext
+from moto import mock_aws
 
 os.environ.setdefault("ACTIVE_JAILS_TABLE", "AegisFlow_ActiveJails")
 os.environ.setdefault("AWS_DEFAULT_REGION", "us-east-1")
@@ -36,7 +38,7 @@ def test_acquire_lock_writes_locked_status(ddb_table):
     assert "ttl" in item
 
 def test_acquire_lock_raises_on_duplicate(ddb_table):
-    from aegis_remediator.locker import acquire_lock, AlreadyLocked
+    from aegis_remediator.locker import AlreadyLocked, acquire_lock
     ctx = make_ctx()
     acquire_lock(ctx)
     with pytest.raises(AlreadyLocked):

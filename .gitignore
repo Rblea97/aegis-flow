@@ -10,8 +10,10 @@ cdk/node_modules/
 cdk/cdk.out/
 cdk/*.js
 cdk/*.d.ts
+*.tsbuildinfo
 cdk/bin/*.js
 cdk/lib/*.js
+cdk/test/*.js
 cdk.context.json
 
 # Python

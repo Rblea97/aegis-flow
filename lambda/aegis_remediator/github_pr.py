@@ -1,17 +1,22 @@
-import json, logging
+import json
+import logging
+
 from .models import RemediationContext
 
 log = logging.getLogger(__name__)
 
 def create_github_pr(ctx: RemediationContext, audit_record: dict) -> dict:
     """
-    Opens a GitHub PR via GitHub MCP. Falls back gracefully if MCP unavailable.
-    In LocalStack tests, this is stubbed — real invocation requires MCP server.
+    Prepare a PR-style remediation trail.
+
+    V1 deliberately does not open a live GitHub PR from Lambda. The workflow
+    returns a structured pending result so operators can review and promote the
+    remediation trail through the normal repository process.
     """
     try:
         title = f"[SECURITY-REMEDIATION] Quarantined {ctx.resource_arn}"
         body = _build_pr_body(ctx, audit_record)
-        return {"pr_created": True, "title": title}
+        return {"pr_created": False, "pr_pending": True, "title": title, "body": body}
     except Exception as exc:
         log.error("GitHub PR creation failed: %s", exc)
         return {"pr_created": False, "error": str(exc)}
@@ -19,7 +24,13 @@ def create_github_pr(ctx: RemediationContext, audit_record: dict) -> dict:
 def create_failed_github_pr(ctx: RemediationContext, failed_state: str, partial: list) -> dict:
     try:
         title = f"[SECURITY-ALERT] Incomplete quarantine: {ctx.resource_arn}"
-        return {"pr_created": True, "title": title}
+        return {
+            "pr_created": False,
+            "pr_pending": True,
+            "title": title,
+            "failed_state": failed_state,
+            "partial_actions_completed": partial,
+        }
     except Exception as exc:
         log.error("Failed GitHub PR creation failed: %s", exc)
         return {"pr_created": False, "error": str(exc)}

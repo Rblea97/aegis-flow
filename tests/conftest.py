@@ -1,4 +1,5 @@
-import os, pytest, boto3
+import boto3
+import pytest
 
 LOCALSTACK_ENDPOINT = "http://localhost:4566"
 AWS_REGION = "us-east-1"

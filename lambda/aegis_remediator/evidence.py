@@ -1,7 +1,7 @@
-import json
-import os
-import logging
 import datetime
+import json
+import logging
+import os
 
 from .models import RemediationContext
 from .session import get_client
@@ -60,7 +60,7 @@ def _collect_compute_evidence(ctx: RemediationContext) -> dict:
 def _collect_identity_evidence(ctx: RemediationContext) -> dict:
     s3 = get_client("s3")
     cloudtrail = get_client("cloudtrail")
-    end = datetime.datetime.now(datetime.timezone.utc)
+    end = datetime.datetime.now(datetime.UTC)
     start = end - datetime.timedelta(hours=2)
     try:
         username = ctx.principal_arn.split("/")[-1]

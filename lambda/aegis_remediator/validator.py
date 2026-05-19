@@ -1,4 +1,5 @@
 import re
+
 from .models import RemediationContext
 
 RESOURCE_ARN_PATTERN = re.compile(
@@ -21,8 +22,8 @@ def validate_event(event: dict) -> RemediationContext:
         try:
             instance_id = detail["resource"]["instanceDetails"]["instanceId"]
             eni_id = detail["resource"]["instanceDetails"]["networkInterfaces"][0]["networkInterfaceId"]
-        except KeyError:
-            raise ValueError("Malformed event: missing required field")
+        except KeyError as exc:
+            raise ValueError("Malformed event: missing required field") from exc
         resource_arn = f"arn:aws:ec2:{region}:{account_id}:instance/{instance_id}"
         if not RESOURCE_ARN_PATTERN.match(resource_arn):
             raise ValueError(f"ARN failed validation: {resource_arn}")
@@ -40,8 +41,8 @@ def validate_event(event: dict) -> RemediationContext:
         try:
             principal_arn = detail["resource"]["accessKeyDetails"]["userArn"]
             session_context = detail["resource"]["accessKeyDetails"].get("sessionContext", {})
-        except KeyError:
-            raise ValueError("Malformed event: missing required field")
+        except KeyError as exc:
+            raise ValueError("Malformed event: missing required field") from exc
         if not RESOURCE_ARN_PATTERN.match(principal_arn):
             raise ValueError(f"Rejected: ARN failed validation: {principal_arn}")
         return RemediationContext(

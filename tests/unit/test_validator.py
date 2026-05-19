@@ -1,5 +1,7 @@
-import json, pytest
+import json
 from pathlib import Path
+
+import pytest
 
 FIXTURES = Path(__file__).parent.parent / "fixtures"
 

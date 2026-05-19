@@ -1,7 +1,8 @@
 import json
 import time
-import pytest
 from pathlib import Path
+
+import pytest
 from botocore.exceptions import ClientError
 
 FIXTURES = Path(__file__).parent.parent / "fixtures"
@@ -58,7 +59,7 @@ def _find_quarantine_sg(ec2_client) -> dict:
     groups = ec2_client.describe_security_groups()["SecurityGroups"]
     matches = [
         group for group in groups
-        if group.get("Description") == "AegisFlow quarantine — deny all traffic"
+        if group.get("Description") == "AegisFlow quarantine - deny all traffic"
     ]
     assert matches, "Quarantine security group was not deployed by CDK"
     return matches[0]

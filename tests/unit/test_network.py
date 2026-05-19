@@ -1,7 +1,9 @@
-import os, pytest
+import os
+
 import boto3
-from moto import mock_aws
+import pytest
 from aegis_remediator.models import RemediationContext
+from moto import mock_aws
 
 os.environ.setdefault("QUARANTINE_SG_ID", "sg-quarantine")
 os.environ.setdefault("AWS_DEFAULT_REGION", "us-east-1")

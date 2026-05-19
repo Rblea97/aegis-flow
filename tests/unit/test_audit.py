@@ -1,7 +1,10 @@
-import os, pytest, time
+import os
+import time
+
 import boto3
-from moto import mock_aws
+import pytest
 from aegis_remediator.models import RemediationContext
+from moto import mock_aws
 
 os.environ.setdefault("ACTIVE_JAILS_TABLE", "AegisFlow_ActiveJails")
 os.environ.setdefault("AWS_DEFAULT_REGION", "us-east-1")
