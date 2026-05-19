@@ -1,5 +1,7 @@
-import os, logging
-from datetime import datetime, timezone
+import logging
+import os
+from datetime import UTC, datetime
+
 from .models import RemediationContext
 from .session import get_resource
 
@@ -21,7 +23,7 @@ def write_audit_record(ctx: RemediationContext, action_log: dict,
             ":al": action_log,
             ":es": evidence_status,
             ":eu": evidence_uris,
-            ":ra": datetime.now(timezone.utc).isoformat(),
+            ":ra": datetime.now(UTC).isoformat(),
             ":gpp": False,
         },
     )
@@ -41,7 +43,7 @@ def write_failed_record(ctx: RemediationContext, failed_state: str,
             ":fs": failed_state,
             ":fr": failure_reason,
             ":pa": partial,
-            ":ra": datetime.now(timezone.utc).isoformat(),
+            ":ra": datetime.now(UTC).isoformat(),
         },
     )
 

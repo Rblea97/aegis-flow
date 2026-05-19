@@ -1,6 +1,9 @@
-import os, time
+import os
+import time
+
 from boto3.dynamodb.conditions import Attr
 from botocore.exceptions import ClientError
+
 from .models import RemediationContext
 from .session import get_resource
 
@@ -26,7 +29,7 @@ def acquire_lock(ctx: RemediationContext) -> None:
             },
             ConditionExpression=Attr("resource_arn").not_exists(),
         )
-    except ClientError as e:
-        if e.response["Error"]["Code"] == "ConditionalCheckFailedException":
-            raise AlreadyLocked(f"Resource already locked: {ctx.resource_arn}")
+    except ClientError as exc:
+        if exc.response["Error"]["Code"] == "ConditionalCheckFailedException":
+            raise AlreadyLocked(f"Resource already locked: {ctx.resource_arn}") from exc
         raise

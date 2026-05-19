@@ -18,6 +18,7 @@ export class AegisFlowFoundationStack extends cdk.Stack {
     super(scope, id, props);
 
     const isLocalStack = process.env.AEGISFLOW_LOCALSTACK === '1';
+    const externalId = process.env.AEGISFLOW_EXTERNAL_ID;
     this.lambdaSubnetType = isLocalStack
       ? ec2.SubnetType.PRIVATE_ISOLATED
       : ec2.SubnetType.PRIVATE_WITH_EGRESS;
@@ -66,7 +67,9 @@ export class AegisFlowFoundationStack extends cdk.Stack {
       tableName: 'AegisFlow_ActiveJails',
       partitionKey: { name: 'resource_arn', type: dynamodb.AttributeType.STRING },
       billingMode: dynamodb.BillingMode.PAY_PER_REQUEST,
-      pointInTimeRecovery: true,
+      pointInTimeRecoverySpecification: {
+        pointInTimeRecoveryEnabled: true,
+      },
       timeToLiveAttribute: 'ttl',
       removalPolicy: cdk.RemovalPolicy.DESTROY,
     });
@@ -81,10 +84,15 @@ export class AegisFlowFoundationStack extends cdk.Stack {
     });
 
     // Remediation Execution Role: carries all real permissions
-    // Trust: locked to Remediator Lambda role + ExternalId (added in Pipeline stack after Lambda ARN is known)
+    const remediationAssumePrincipal = externalId
+      ? new iam.PrincipalWithConditions(
+          new iam.ArnPrincipal(this.remediatorLambdaRole.roleArn),
+          { StringEquals: { 'sts:ExternalId': externalId } },
+        )
+      : new iam.ArnPrincipal(this.remediatorLambdaRole.roleArn);
     this.remediationExecutionRole = new iam.Role(this, 'RemediationExecutionRole', {
       roleName: 'AegisFlow-Remediation-Execution-Role',
-      assumedBy: this.remediatorLambdaRole, // tightened in pipeline-stack once Lambda ARN is known
+      assumedBy: remediationAssumePrincipal,
     });
 
     this.remediationExecutionRole.addToPolicy(new iam.PolicyStatement({
@@ -130,6 +138,9 @@ export class AegisFlowFoundationStack extends cdk.Stack {
     this.remediatorLambdaRole.addToPolicy(new iam.PolicyStatement({
       actions: ['sts:AssumeRole'],
       resources: [this.remediationExecutionRole.roleArn],
+      conditions: externalId
+        ? { StringEquals: { 'sts:ExternalId': externalId } }
+        : undefined,
     }));
 
     new cdk.CfnOutput(this, 'RemediationExecutionRoleArn', {

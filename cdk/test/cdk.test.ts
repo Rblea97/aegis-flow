@@ -1,14 +1,24 @@
 import * as cdk from 'aws-cdk-lib';
 import { Template, Match } from 'aws-cdk-lib/assertions';
-import { AegisFlowFoundationStack } from '../lib/foundation-stack';
-import { AegisFlowPipelineStack } from '../lib/pipeline-stack';
 
-function synthStacks(localstack = false) {
+// Explicit .ts requires keep Jest from loading stale generated .js files.
+// eslint-disable-next-line @typescript-eslint/no-var-requires
+const { AegisFlowFoundationStack } = require('../lib/foundation-stack.ts');
+// eslint-disable-next-line @typescript-eslint/no-var-requires
+const { AegisFlowPipelineStack } = require('../lib/pipeline-stack.ts');
+
+function synthStacks(localstack = false, externalId?: string) {
   const previousLocalstack = process.env.AEGISFLOW_LOCALSTACK;
+  const previousExternalId = process.env.AEGISFLOW_EXTERNAL_ID;
   if (localstack) {
     process.env.AEGISFLOW_LOCALSTACK = '1';
   } else {
     delete process.env.AEGISFLOW_LOCALSTACK;
+  }
+  if (externalId !== undefined) {
+    process.env.AEGISFLOW_EXTERNAL_ID = externalId;
+  } else {
+    delete process.env.AEGISFLOW_EXTERNAL_ID;
   }
 
   const app = new cdk.App();
@@ -25,6 +35,11 @@ function synthStacks(localstack = false) {
   } else {
     process.env.AEGISFLOW_LOCALSTACK = previousLocalstack;
   }
+  if (previousExternalId === undefined) {
+    delete process.env.AEGISFLOW_EXTERNAL_ID;
+  } else {
+    process.env.AEGISFLOW_EXTERNAL_ID = previousExternalId;
+  }
 
   return {
     foundationTemplate: Template.fromStack(foundation),
@@ -40,6 +55,9 @@ test('foundation stack preserves production network and jail store requirements'
     TableName: 'AegisFlow_ActiveJails',
     KeySchema: [{ AttributeName: 'resource_arn', KeyType: 'HASH' }],
     BillingMode: 'PAY_PER_REQUEST',
+    PointInTimeRecoverySpecification: {
+      PointInTimeRecoveryEnabled: true,
+    },
     TimeToLiveSpecification: {
       AttributeName: 'ttl',
       Enabled: true,
@@ -96,6 +114,35 @@ test('pipeline stack uses express Step Functions and strict GuardDuty routing', 
         QUARANTINE_SG_ID: Match.anyValue(),
         SNS_ALERT_TOPIC_ARN: Match.anyValue(),
       }),
+    },
+  });
+});
+
+test('configured external id is passed to Lambda and required by execution role trust', () => {
+  const { foundationTemplate, pipelineTemplate } = synthStacks(false, 'aegisflow-release-polish');
+
+  pipelineTemplate.hasResourceProperties('AWS::Lambda::Function', {
+    FunctionName: 'AegisFlow-Remediator',
+    Environment: {
+      Variables: Match.objectLike({
+        EXTERNAL_ID: 'aegisflow-release-polish',
+      }),
+    },
+  });
+
+  foundationTemplate.hasResourceProperties('AWS::IAM::Role', {
+    RoleName: 'AegisFlow-Remediation-Execution-Role',
+    AssumeRolePolicyDocument: {
+      Statement: Match.arrayWith([
+        Match.objectLike({
+          Action: 'sts:AssumeRole',
+          Condition: {
+            StringEquals: {
+              'sts:ExternalId': 'aegisflow-release-polish',
+            },
+          },
+        }),
+      ]),
     },
   });
 });

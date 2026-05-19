@@ -1,6 +1,6 @@
 import json
 import logging
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from .models import RemediationContext
 from .session import get_client
@@ -15,7 +15,7 @@ DENY_ALL_POLICY = json.dumps({
         "Resource": "*",
         "Condition": {
             "DateLessThan": {
-                "aws:TokenIssueTime": datetime.now(timezone.utc).isoformat()
+                "aws:TokenIssueTime": datetime.now(UTC).isoformat()
             }
         },
     }],

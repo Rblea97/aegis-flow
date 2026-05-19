@@ -2,7 +2,7 @@
 
 ## Overview
 
-Aegis-Flow is a Zero Trust remediation workflow for GuardDuty-style findings. A high-severity finding is routed into an Express Step Functions workflow, where a Python Lambda validates the event, acquires a DynamoDB lock, collects evidence, applies quarantine controls, writes an audit record, and prepares a GitHub-style remediation trail.
+Aegis-Flow is a Zero Trust remediation workflow for GuardDuty-style findings. A high-severity finding is routed into an Express Step Functions workflow, where a Python Lambda validates the event, acquires a DynamoDB lock, collects evidence, applies quarantine controls, writes an audit record, and prepares a PR-style remediation summary for review.
 
 ## Component Model
 
@@ -31,6 +31,8 @@ The Step Functions workflow runs these states:
 6. `WriteAuditRecord`
 7. `CreateGitHubPR`
 
+In V1, `CreateGitHubPR` prepares PR-style metadata and returns a structured result. It is intentionally stubbed until a real GitHub integration is added.
+
 The workflow remains `EXPRESS` to match the design spec. Integration tests verify the workflow through durable state changes rather than polling Express execution details.
 
 ## Playbooks
@@ -50,6 +52,10 @@ The workflow remains `EXPRESS` to match the design spec. Integration tests verif
 ## State and Idempotency
 
 DynamoDB table `AegisFlow_ActiveJails` is the active remediation ledger. The partition key is `resource_arn`. `AcquireLock` uses a conditional write so duplicate findings for the same resource do not create duplicate jail records.
+
+## IAM Boundary
+
+The Lambda execution role is deliberately narrow: it has Lambda runtime VPC/logging permissions and can assume the remediation execution role, but it does not receive direct EC2, IAM, DynamoDB, S3, or CloudTrail remediation permissions. All AWS remediation state changes happen through the assumed role. When `AEGISFLOW_EXTERNAL_ID` is configured at deploy time, CDK adds the matching `sts:ExternalId` condition to the execution role trust policy and the Lambda passes that value during `AssumeRole`.
 
 ## LocalStack Compatibility
 

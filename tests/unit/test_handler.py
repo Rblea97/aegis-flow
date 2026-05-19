@@ -1,6 +1,6 @@
-import os, json, pytest
-import boto3
-from moto import mock_aws
+import os
+
+import pytest
 
 os.environ.setdefault("ACTIVE_JAILS_TABLE", "AegisFlow_ActiveJails")
 os.environ.setdefault("FORENSICS_BUCKET", "aegisflow-forensics-test")

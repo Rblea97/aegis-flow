@@ -1,8 +1,9 @@
 import json
 import time
-from uuid import uuid4
-import pytest
 from pathlib import Path
+from uuid import uuid4
+
+import pytest
 from botocore.exceptions import ClientError
 
 FIXTURES = Path(__file__).parent.parent / "fixtures"

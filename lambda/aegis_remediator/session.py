@@ -1,9 +1,10 @@
 """
 Provides boto3 sessions scoped to the AegisFlow Remediation Execution Role.
 
-The Lambda's own IAM role (RemediatorLambdaRole) intentionally has no direct
-AWS permissions — it can only call sts:AssumeRole. All real AWS operations must
-use the credentials vended by assuming the Execution Role (EXECUTION_ROLE_ARN).
+The Lambda's own IAM role (RemediatorLambdaRole) intentionally keeps only
+Lambda runtime VPC/logging permissions plus sts:AssumeRole. Remediation API
+calls must use the credentials vended by assuming the Execution Role
+(EXECUTION_ROLE_ARN).
 
 Usage:
     from .session import get_client, get_resource
@@ -12,8 +13,9 @@ Usage:
     ddb = get_resource("dynamodb")
 """
 
-import os
 import logging
+import os
+
 import boto3
 from boto3 import Session
 
@@ -25,11 +27,15 @@ _assumed_session: Session | None = None
 def _build_assumed_session() -> Session:
     """Assume the Execution Role and return a boto3 Session with those credentials."""
     execution_role_arn = os.environ["EXECUTION_ROLE_ARN"]
+    external_id = os.environ.get("EXTERNAL_ID")
     sts = boto3.client("sts")
-    resp = sts.assume_role(
-        RoleArn=execution_role_arn,
-        RoleSessionName="aegisflow-remediator",
-    )
+    assume_role_args = {
+        "RoleArn": execution_role_arn,
+        "RoleSessionName": "aegisflow-remediator",
+    }
+    if external_id:
+        assume_role_args["ExternalId"] = external_id
+    resp = sts.assume_role(**assume_role_args)
     creds = resp["Credentials"]
     log.info("Assumed execution role %s (expiry: %s)", execution_role_arn, creds["Expiration"])
     return Session(

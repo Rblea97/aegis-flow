@@ -1,7 +1,9 @@
-import os, pytest, json
+import json
+import os
+
 import boto3
-from moto import mock_aws
 from aegis_remediator.models import RemediationContext
+from moto import mock_aws
 
 os.environ.setdefault("AWS_DEFAULT_REGION", "us-east-1")
 os.environ.setdefault("AWS_ACCESS_KEY_ID", "test")
@@ -9,7 +11,7 @@ os.environ.setdefault("AWS_SECRET_ACCESS_KEY", "test")
 
 def make_compute_ctx(role_name: str) -> RemediationContext:
     return RemediationContext(
-        resource_arn=f"arn:aws:ec2:us-east-1:123456789012:instance/i-abc",
+        resource_arn="arn:aws:ec2:us-east-1:123456789012:instance/i-abc",
         finding_id="f1", finding_type="Impact:EC2/CryptoMining",
         playbook_type="COMPUTE", action="FreezeIdentity",
         instance_id="i-abc", eni_id="eni-abc",
@@ -27,7 +29,6 @@ def make_identity_ctx(principal_arn: str) -> RemediationContext:
 def test_compute_attaches_deny_policy_to_instance_role():
     from aegis_remediator.identity import freeze_identity
     iam = boto3.client("iam", region_name="us-east-1")
-    ec2 = boto3.client("ec2", region_name="us-east-1")
 
     # Create role + instance profile + associate with instance
     iam.create_role(RoleName="InstanceRole", AssumeRolePolicyDocument=json.dumps({
@@ -40,7 +41,7 @@ def test_compute_attaches_deny_policy_to_instance_role():
     ctx.instance_id = "i-abc"
     ctx._instance_role_name = "InstanceRole"  # set by handler in real flow
 
-    result = freeze_identity(ctx, role_name_override="InstanceRole")
+    freeze_identity(ctx, role_name_override="InstanceRole")
     policies = iam.list_role_policies(RoleName="InstanceRole")["PolicyNames"]
     assert "AegisFlow-Deny-All" in policies
     raw = iam.get_role_policy(RoleName="InstanceRole", PolicyName="AegisFlow-Deny-All")["PolicyDocument"]
