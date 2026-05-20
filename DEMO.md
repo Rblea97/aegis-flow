@@ -2,6 +2,8 @@
 
 This demo shows the V1 release without using a real AWS account. It uses moto for fast unit tests and LocalStack for integration tests against AWS-like state.
 
+For the latest sanitized real-account verification, see [docs/live-aws-verification.md](docs/live-aws-verification.md). The 2026-05-20 live run completed the disposable EC2 E2E path: CDK deployed with a live-run suffix, Step Functions invoked the Lambda remediator, DynamoDB reached `COMPLETE`, S3 evidence metadata was present, the disposable instance role received `AegisFlow-Deny-All`, the EC2 instance was quarantined, duplicate finding idempotency kept one jail record, and cleanup was verified.
+
 ## What You Will See
 
 The demo validates the core remediation story:

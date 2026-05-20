@@ -38,6 +38,12 @@ PASS  Evidence collection: success
 AUDIT PASSED
 ```
 
+## Live AWS Verification
+
+Real-account E2E verification ran on 2026-05-20 using sanitized evidence only. AWS identity preflight passed for `<ACCOUNT_ID>` in `<REGION>`, suffix-scoped CDK stacks deployed, a disposable EC2 target was remediated through Step Functions/Lambda, DynamoDB reached `COMPLETE`, S3 evidence metadata existed without exposing object contents, the disposable instance role received the deny-all policy, the EC2 target was moved to the quarantine security group, and cleanup was verified.
+
+The live run also found two real cloud-only gaps that were fixed with tests: collision-prone fixed physical names now support `AEGISFLOW_NAME_SUFFIX`, and the remediation role now includes the `iam:GetInstanceProfile` permission required to freeze an EC2 instance role. See [docs/live-aws-verification.md](docs/live-aws-verification.md) for the verification table and redaction notes.
+
 ## Key Features
 
 - **Finding-driven remediation** — EventBridge routes high-severity GuardDuty-style findings into an Express Step Functions workflow.
@@ -136,6 +142,7 @@ cd ..
 - **LocalStack Express workflow limits** — Integration tests validate durable AWS state instead of relying on `DescribeExecution`, which is limited for Express workflows in local emulation.
 - **Duplicate finding protection** — `AcquireLock` uses a DynamoDB conditional write on `resource_arn`, so concurrent findings cannot create duplicate jail records.
 - **Evidence-first remediation** — The workflow collects CloudTrail evidence before enforcement, preserving investigative context even if a later quarantine step fails.
+- **Live-run namespacing** — `AEGISFLOW_NAME_SUFFIX` can namespace collision-prone physical resource names for disposable real-account validation.
 - **Honest PR trail in V1** — The workflow currently prepares PR-style remediation metadata through a stubbed function. It does not claim to open a real GitHub PR until that integration is implemented.
 - **Constrained AI-assisted development** — AI-generated code is treated as untrusted until static analysis, Python dependency auditing, npm high-severity auditing, unit tests, CDK synthesis tests, and CI workflows validate it.
 

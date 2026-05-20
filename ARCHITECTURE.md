@@ -80,3 +80,7 @@ Verification is state-based:
 - Unit tests use moto for in-process AWS mocks.
 - Integration tests deploy CDK to LocalStack and assert DynamoDB, IAM, and EC2 post-state.
 - `scripts/verify_remediation.py` independently audits the remediated resource using Boto3.
+
+Live AWS verification evidence is tracked separately in [docs/live-aws-verification.md](docs/live-aws-verification.md). The 2026-05-20 live run verified the disposable EC2 path through deployment, Step Functions execution, Lambda remediation, DynamoDB audit state, S3 evidence metadata, IAM freeze behavior, EC2 quarantine, duplicate finding idempotency, and cleanup.
+
+For real-account validation, set `AEGISFLOW_NAME_SUFFIX` to a short unique value. The suffix namespaces collision-prone physical names such as the DynamoDB table, remediation execution role, Lambda function, Lambda log group, Step Functions state machine, state machine log group, and SNS topic while preserving the default portfolio/demo names when the variable is unset.
