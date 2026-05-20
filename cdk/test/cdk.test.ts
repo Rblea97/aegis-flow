@@ -27,35 +27,37 @@ function synthStacks(localstack = false, externalId?: string, nameSuffix?: strin
     delete process.env.AEGISFLOW_NAME_SUFFIX;
   }
 
-  const app = new cdk.App();
-  const foundation = new AegisFlowFoundationStack(app, 'AegisFlowFoundationStack', {
-    env: { account: '123456789012', region: 'us-east-1' },
-  });
-  const pipeline = new AegisFlowPipelineStack(app, 'AegisFlowPipelineStack', {
-    env: { account: '123456789012', region: 'us-east-1' },
-    foundationStack: foundation,
-  });
+  try {
+    const app = new cdk.App();
+    const foundation = new AegisFlowFoundationStack(app, 'AegisFlowFoundationStack', {
+      env: { account: '123456789012', region: 'us-east-1' },
+    });
+    const pipeline = new AegisFlowPipelineStack(app, 'AegisFlowPipelineStack', {
+      env: { account: '123456789012', region: 'us-east-1' },
+      foundationStack: foundation,
+    });
 
-  if (previousLocalstack === undefined) {
-    delete process.env.AEGISFLOW_LOCALSTACK;
-  } else {
-    process.env.AEGISFLOW_LOCALSTACK = previousLocalstack;
+    return {
+      foundationTemplate: Template.fromStack(foundation),
+      pipelineTemplate: Template.fromStack(pipeline),
+    };
+  } finally {
+    if (previousLocalstack === undefined) {
+      delete process.env.AEGISFLOW_LOCALSTACK;
+    } else {
+      process.env.AEGISFLOW_LOCALSTACK = previousLocalstack;
+    }
+    if (previousExternalId === undefined) {
+      delete process.env.AEGISFLOW_EXTERNAL_ID;
+    } else {
+      process.env.AEGISFLOW_EXTERNAL_ID = previousExternalId;
+    }
+    if (previousNameSuffix === undefined) {
+      delete process.env.AEGISFLOW_NAME_SUFFIX;
+    } else {
+      process.env.AEGISFLOW_NAME_SUFFIX = previousNameSuffix;
+    }
   }
-  if (previousExternalId === undefined) {
-    delete process.env.AEGISFLOW_EXTERNAL_ID;
-  } else {
-    process.env.AEGISFLOW_EXTERNAL_ID = previousExternalId;
-  }
-  if (previousNameSuffix === undefined) {
-    delete process.env.AEGISFLOW_NAME_SUFFIX;
-  } else {
-    process.env.AEGISFLOW_NAME_SUFFIX = previousNameSuffix;
-  }
-
-  return {
-    foundationTemplate: Template.fromStack(foundation),
-    pipelineTemplate: Template.fromStack(pipeline),
-  };
 }
 
 test('foundation stack preserves production network and jail store requirements', () => {

@@ -6,7 +6,7 @@ This is a security automation demonstration project. It is not a production serv
 
 ## Reporting a Vulnerability
 
-If you discover a security vulnerability in this project, please open a GitHub Issue. Do not include sensitive details (credentials, account IDs, exploit payloads) in public issues.
+If you discover a security vulnerability in this project, please use GitHub private vulnerability reporting or a GitHub Security Advisory when available. If private reporting is unavailable, open a minimal public issue asking for a private coordination channel and do not include sensitive details such as credentials, account IDs, or exploit payloads.
 
 Response time: best effort within 7 days.
 

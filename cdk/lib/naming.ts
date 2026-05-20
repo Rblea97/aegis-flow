@@ -7,7 +7,7 @@ export function physicalName(baseName: string): string {
   }
   if (!NAME_SUFFIX_PATTERN.test(suffix)) {
     throw new Error(
-      'AEGISFLOW_NAME_SUFFIX must start with an alphanumeric character and contain only letters, numbers, hyphens, or underscores.',
+      'AEGISFLOW_NAME_SUFFIX must be 1-32 characters, start with an alphanumeric character, and contain only letters, numbers, hyphens, or underscores.',
     );
   }
   return `${baseName}-${suffix}`;
