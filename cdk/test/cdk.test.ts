@@ -7,9 +7,10 @@ const { AegisFlowFoundationStack } = require('../lib/foundation-stack.ts');
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const { AegisFlowPipelineStack } = require('../lib/pipeline-stack.ts');
 
-function synthStacks(localstack = false, externalId?: string) {
+function synthStacks(localstack = false, externalId?: string, nameSuffix?: string) {
   const previousLocalstack = process.env.AEGISFLOW_LOCALSTACK;
   const previousExternalId = process.env.AEGISFLOW_EXTERNAL_ID;
+  const previousNameSuffix = process.env.AEGISFLOW_NAME_SUFFIX;
   if (localstack) {
     process.env.AEGISFLOW_LOCALSTACK = '1';
   } else {
@@ -19,6 +20,11 @@ function synthStacks(localstack = false, externalId?: string) {
     process.env.AEGISFLOW_EXTERNAL_ID = externalId;
   } else {
     delete process.env.AEGISFLOW_EXTERNAL_ID;
+  }
+  if (nameSuffix !== undefined) {
+    process.env.AEGISFLOW_NAME_SUFFIX = nameSuffix;
+  } else {
+    delete process.env.AEGISFLOW_NAME_SUFFIX;
   }
 
   const app = new cdk.App();
@@ -39,6 +45,11 @@ function synthStacks(localstack = false, externalId?: string) {
     delete process.env.AEGISFLOW_EXTERNAL_ID;
   } else {
     process.env.AEGISFLOW_EXTERNAL_ID = previousExternalId;
+  }
+  if (previousNameSuffix === undefined) {
+    delete process.env.AEGISFLOW_NAME_SUFFIX;
+  } else {
+    process.env.AEGISFLOW_NAME_SUFFIX = previousNameSuffix;
   }
 
   return {
@@ -79,6 +90,16 @@ test('foundation stack preserves production network and jail store requirements'
       ServerSideEncryptionConfiguration: [
         { ServerSideEncryptionByDefault: { SSEAlgorithm: 'AES256' } },
       ],
+    },
+  });
+  foundationTemplate.hasResourceProperties('AWS::IAM::Policy', {
+    PolicyDocument: {
+      Statement: Match.arrayWith([
+        Match.objectLike({
+          Sid: 'IAMRemediation',
+          Action: Match.arrayWith(['iam:GetInstanceProfile']),
+        }),
+      ]),
     },
   });
 });
@@ -152,5 +173,38 @@ test('localstack mode preserves the express workflow contract', () => {
 
   pipelineTemplate.hasResourceProperties('AWS::StepFunctions::StateMachine', {
     StateMachineType: 'EXPRESS',
+  });
+});
+
+test('configured name suffix namespaces live deployment resource names', () => {
+  const suffix = 'live-20260520-a1b2';
+  const { foundationTemplate, pipelineTemplate } = synthStacks(false, undefined, suffix);
+
+  foundationTemplate.hasResourceProperties('AWS::DynamoDB::Table', {
+    TableName: `AegisFlow_ActiveJails-${suffix}`,
+  });
+  foundationTemplate.hasResourceProperties('AWS::IAM::Role', {
+    RoleName: `AegisFlow-Remediation-Execution-Role-${suffix}`,
+  });
+
+  pipelineTemplate.hasResourceProperties('AWS::Lambda::Function', {
+    FunctionName: `AegisFlow-Remediator-${suffix}`,
+    Environment: {
+      Variables: Match.objectLike({
+        ACTIVE_JAILS_TABLE: Match.anyValue(),
+      }),
+    },
+  });
+  pipelineTemplate.hasResourceProperties('AWS::Logs::LogGroup', {
+    LogGroupName: `/aws/lambda/AegisFlow-Remediator-${suffix}`,
+  });
+  pipelineTemplate.hasResourceProperties('AWS::Logs::LogGroup', {
+    LogGroupName: `/aegisflow/state-machine-${suffix}`,
+  });
+  pipelineTemplate.hasResourceProperties('AWS::StepFunctions::StateMachine', {
+    StateMachineName: `AegisFlow-Remediator-${suffix}`,
+  });
+  pipelineTemplate.hasResourceProperties('AWS::SNS::Topic', {
+    TopicName: `aegisflow-security-ops-${suffix}`,
   });
 });

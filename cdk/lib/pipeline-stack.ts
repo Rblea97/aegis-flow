@@ -9,6 +9,7 @@ import * as ec2 from 'aws-cdk-lib/aws-ec2';
 import * as logs from 'aws-cdk-lib/aws-logs';
 import { Construct } from 'constructs';
 import { AegisFlowFoundationStack } from './foundation-stack';
+import { physicalName } from './naming';
 
 interface PipelineStackProps extends cdk.StackProps {
   foundationStack: AegisFlowFoundationStack;
@@ -24,12 +25,18 @@ export class AegisFlowPipelineStack extends cdk.Stack {
 
     // SNS topic for security ops alerts
     const securityOpsTopic = new sns.Topic(this, 'SecurityOpsTopic', {
-      topicName: 'aegisflow-security-ops',
+      topicName: physicalName('aegisflow-security-ops'),
+    });
+
+    const remediatorFunctionName = physicalName('AegisFlow-Remediator');
+    const remediatorLogGroup = new logs.LogGroup(this, 'AegisRemediatorFunctionLogGroup', {
+      logGroupName: `/aws/lambda/${remediatorFunctionName}`,
+      removalPolicy: cdk.RemovalPolicy.DESTROY,
     });
 
     // Remediator Lambda — single dispatcher for all state machine states
     const remediatorFn = new lambda.Function(this, 'AegisRemediatorFunction', {
-      functionName: 'AegisFlow-Remediator',
+      functionName: remediatorFunctionName,
       runtime: lambda.Runtime.PYTHON_3_12,
       handler: 'aegis_remediator.handler.handler',
       code: lambda.Code.fromAsset('../lambda', {
@@ -49,6 +56,7 @@ export class AegisFlowPipelineStack extends cdk.Stack {
         ...(externalId ? { EXTERNAL_ID: externalId } : {}),
       },
       tracing: lambda.Tracing.ACTIVE,
+      logGroup: remediatorLogGroup,
     });
 
     // Helper: build a LambdaInvoke state with the action name stamped into payload
@@ -107,13 +115,13 @@ export class AegisFlowPipelineStack extends cdk.Stack {
       .next(createGitHubPR);
 
     const stateMachine = new sfn.StateMachine(this, 'AegisRemediatorStateMachine', {
-      stateMachineName: 'AegisFlow-Remediator',
+      stateMachineName: physicalName('AegisFlow-Remediator'),
       definitionBody: sfn.DefinitionBody.fromChainable(definition),
       stateMachineType: sfn.StateMachineType.EXPRESS,
       tracingEnabled: true,
       logs: {
         destination: new logs.LogGroup(this, 'StateMachineLogs', {
-          logGroupName: '/aegisflow/state-machine',
+          logGroupName: physicalName('/aegisflow/state-machine'),
           removalPolicy: cdk.RemovalPolicy.DESTROY,
         }),
         level: sfn.LogLevel.ALL,

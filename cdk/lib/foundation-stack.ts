@@ -4,6 +4,7 @@ import * as s3 from 'aws-cdk-lib/aws-s3';
 import * as dynamodb from 'aws-cdk-lib/aws-dynamodb';
 import * as iam from 'aws-cdk-lib/aws-iam';
 import { Construct } from 'constructs';
+import { physicalName } from './naming';
 
 export class AegisFlowFoundationStack extends cdk.Stack {
   public readonly vpc: ec2.Vpc;
@@ -64,7 +65,7 @@ export class AegisFlowFoundationStack extends cdk.Stack {
 
     // DynamoDB: idempotency + hot state
     this.activeJailsTable = new dynamodb.Table(this, 'ActiveJailsTable', {
-      tableName: 'AegisFlow_ActiveJails',
+      tableName: physicalName('AegisFlow_ActiveJails'),
       partitionKey: { name: 'resource_arn', type: dynamodb.AttributeType.STRING },
       billingMode: dynamodb.BillingMode.PAY_PER_REQUEST,
       pointInTimeRecoverySpecification: {
@@ -91,7 +92,7 @@ export class AegisFlowFoundationStack extends cdk.Stack {
         )
       : new iam.ArnPrincipal(this.remediatorLambdaRole.roleArn);
     this.remediationExecutionRole = new iam.Role(this, 'RemediationExecutionRole', {
-      roleName: 'AegisFlow-Remediation-Execution-Role',
+      roleName: physicalName('AegisFlow-Remediation-Execution-Role'),
       assumedBy: remediationAssumePrincipal,
     });
 
@@ -115,6 +116,7 @@ export class AegisFlowFoundationStack extends cdk.Stack {
         'iam:PutUserPolicy',
         'iam:GetRole',
         'iam:GetUser',
+        'iam:GetInstanceProfile',
         'iam:UpdateAssumeRolePolicy',
       ],
       resources: ['*'],

@@ -20,6 +20,15 @@ Default synthesis preserves the spec-compliant architecture:
 - private subnets with egress
 - one NAT gateway
 
+For disposable real-account validation, set a short unique suffix before synth/deploy:
+
+```powershell
+$env:AEGISFLOW_NAME_SUFFIX='live-YYYYMMDD-shortid'
+npx cdk deploy AegisFlowFoundationStack AegisFlowPipelineStack --require-approval never
+```
+
+The suffix is applied only to collision-prone physical names. Leave it unset for the default portfolio/demo names.
+
 ## LocalStack Deploy
 
 LocalStack cannot reliably emulate the NAT gateway path, so local deployments use the explicit compatibility flag:
